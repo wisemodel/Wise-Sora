@@ -1,4 +1,5 @@
 import torch
+from einops import rearrange, repeat
 from tqdm import tqdm
 
 
@@ -325,6 +326,12 @@ def model_wrapper(
         elif guidance_type == "classifier-free":
             if guidance_scale == 1. or unconditional_condition is None:
                 return noise_pred_fn(x, t_continuous, cond=condition)
+            #---------------针对视频做的处理----------------------#
+            '''如果是图像需要注释'''
+            if x.ndim == 4:
+                x = rearrange(x,'(b f) c h w -> b f c h w',b = x.shape[0]//16)
+                t_continuous = t_continuous[:x.shape[0]]
+            #---------------针对视频做的处理----------------------#
             x_in = torch.cat([x] * 2)
             t_in = torch.cat([t_continuous] * 2)
             c_in = torch.cat([unconditional_condition, condition])
@@ -1204,6 +1211,8 @@ class DPM_Solver:
                 step = 0
                 t = timesteps[step]
                 t_prev_list = [t]
+                if x.ndim == 5:
+                    x = rearrange(x,'b f c h w -> (b f) c h w')
                 model_prev_list = [self.model_fn(x, t)]
                 if self.correcting_xt_fn is not None:
                     x = self.correcting_xt_fn(x, t, step)

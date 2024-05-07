@@ -12,25 +12,28 @@ from tqdm import tqdm
 import torch
 from torchvision.utils import save_image
 from diffusers.models import AutoencoderKL
-
+from einops import rearrange, repeat
 from diffusion.model.utils import prepare_prompt_ar
-from diffusion import IDDPM, DPMS, SASolverSampler
 from tools.download import find_model
 from diffusion.model.nets import PixArtMS_XL_2, PixArt_XL_2
+from diffusion.model.nets.PixArt_t2v import PixArt_XL_2_T2V
 from diffusion.model.t5 import T5Embedder
-from diffusion.data.datasets import get_chunks, ASPECT_RATIO_512_TEST, ASPECT_RATIO_1024_TEST
+from diffusion.data.datasets import get_chunks
+from diffusion.lcm_scheduler import LCMScheduler
+from diffusion.data.datasets import ASPECT_RATIO_512_TEST, ASPECT_RATIO_1024_TEST,ASPECT_RATIO_256_TEST
+
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_size', default=512, type=int)
+    parser.add_argument('--image_size', default=1024, type=int)
     parser.add_argument('--t5_path', default='output/pretrained_models/t5_ckpts', type=str)
     parser.add_argument('--tokenizer_path', default='output/pretrained_models/sd-vae-ft-ema', type=str)
-    parser.add_argument('--txt_file', default='asset/samples.txt', type=str)
-    parser.add_argument('--model_path', default='output/pretrained_models/PixArt-XL-2-512x512.pth', type=str)
+    parser.add_argument('--txt_file', default='asset/samples1.txt', type=str)
+    parser.add_argument('--model_path', default='output/pretrained_models/PixArt-XL-2-SAM-256x256.pth', type=str)
     parser.add_argument('--bs', default=1, type=int)
     parser.add_argument('--cfg_scale', default=4.5, type=float)
-    parser.add_argument('--sampling_algo', default='dpm-solver', type=str, choices=['iddpm', 'dpm-solver', 'sa-solver'])
+    parser.add_argument('--sample_steps', default=4, type=int)
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--dataset', default='custom', type=str)
     parser.add_argument('--step', default=-1, type=int)
@@ -45,9 +48,11 @@ def set_env(seed=0):
     for _ in range(30):
         torch.randn(1, 4, args.image_size, args.image_size)
 
-
 @torch.inference_mode()
 def visualize(items, bs, sample_steps, cfg_scale):
+    # 4. Prepare timesteps
+    scheduler.set_timesteps(sample_steps, 50)
+    timesteps = scheduler.timesteps
 
     for chunk in tqdm(list(get_chunks(items, bs)), unit='batch'):
 
@@ -64,68 +69,41 @@ def visualize(items, bs, sample_steps, cfg_scale):
         else:
             hw = torch.tensor([[args.image_size, args.image_size]], dtype=torch.float, device=device).repeat(bs, 1)
             ar = torch.tensor([[1.]], device=device).repeat(bs, 1)
-            for prompt in chunk:
-                prompts.append(prepare_prompt_ar(prompt, base_ratios, device=device, show=False)[0].strip())
+            prompts.append(prepare_prompt_ar(prompt, base_ratios, device=device, show=False)[0].strip())
             latent_size_h, latent_size_w = latent_size, latent_size
-
-        null_y = model.y_embedder.y_embedding[None].repeat(len(prompts), 1, 1)[:, None]
 
         with torch.no_grad():
             caption_embs, emb_masks = t5.get_text_embeddings(prompts)
             caption_embs = caption_embs.float()[:, None]
             print('finish embedding')
 
-            if args.sampling_algo == 'iddpm':
-                # Create sampling noise:
-                n = len(prompts)
-                z = torch.randn(n, 4, latent_size_h, latent_size_w, device=device).repeat(2, 1, 1, 1)
-                model_kwargs = dict(y=torch.cat([caption_embs, null_y]),
-                                    cfg_scale=cfg_scale, data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
-                diffusion = IDDPM(str(sample_steps))
-                # Sample images:
-                samples = diffusion.p_sample_loop(
-                    model.forward_with_cfg, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True,
-                    device=device
-                )
-                samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
-            elif args.sampling_algo == 'dpm-solver':
-                # Create sampling noise:
-                n = len(prompts)
-                z = torch.randn(n, 4, latent_size_h, latent_size_w, device=device)
-                model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
-                dpm_solver = DPMS(model.forward_with_dpmsolver,
-                                  condition=caption_embs,
-                                  uncondition=null_y,
-                                  cfg_scale=cfg_scale,
-                                  model_kwargs=model_kwargs)
-                samples = dpm_solver.sample(
-                    z,
-                    steps=sample_steps,
-                    order=2,
-                    skip_type="time_uniform",
-                    method="multistep",
-                )
-            elif args.sampling_algo == 'sa-solver':
-                # Create sampling noise:
-                n = len(prompts)
-                model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
-                sa_solver = SASolverSampler(model.forward_with_dpmsolver, device=device)
-                samples = sa_solver.sample(
-                    S=25,
-                    batch_size=n,
-                    shape=(4, latent_size_h, latent_size_w),
-                    eta=1,
-                    conditioning=caption_embs,
-                    unconditional_conditioning=null_y,
-                    unconditional_guidance_scale=cfg_scale,
-                    model_kwargs=model_kwargs,
-                )[0]
-        samples = vae.decode(samples / 0.18215).sample
+            # Create sampling noise:
+            n = len(prompts)
+            latents = torch.randn(n, 16, 4, latent_size_h, latent_size_w, device=device)
+            model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
+            # model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=None)
+
+            # 7. LCM MultiStep Sampling Loop:
+            for i, t in tqdm(list(enumerate(timesteps))):
+                ts = torch.full((bs,), t, device=device, dtype=torch.long)
+
+                # model prediction (v-prediction, eps, x)
+                # model_pred = model(latents, ts, caption_embs, **model_kwargs)[:, :4]
+                model_pred = model(latents, ts, caption_embs, **model_kwargs)
+                model_pred =  rearrange(model_pred, 'b f c h w -> (b f) c h w') 
+                model_pred = model_pred[:, :4]
+                # compute the previous noisy sample x_t -> x_t-1
+                latents, denoised = scheduler.step(model_pred, i, t, latents, return_dict=False)
+        denoised = rearrange(denoised, 'b f c h w -> (b f) c h w') 
+        print("prompts",prompts)
+        prompts = prompts*16
+        samples = vae.decode(denoised / 0.18215).sample
+        print(samples.shape)
         torch.cuda.empty_cache()
         # Save images:
         os.umask(0o000)  # file permission: 666; dir permission: 777
         for i, sample in enumerate(samples):
-            save_path = os.path.join(save_root, f"{prompts[i][:100]}.jpg")
+            save_path = os.path.join(save_root, f"{prompts[i][:100]}_{i}.jpg")
             print("Saving path: ", save_path)
             save_image(sample, save_path, nrow=1, normalize=True, value_range=(-1, 1))
 
@@ -136,19 +114,19 @@ if __name__ == '__main__':
     seed = args.seed
     set_env(seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    assert args.sampling_algo in ['iddpm', 'dpm-solver', 'sa-solver']
 
     # only support fixed latent size currently
     latent_size = args.image_size // 8
-    lewei_scale = {512: 1, 1024: 2}     # trick for positional embedding interpolation
-    sample_steps_dict = {'iddpm': 100, 'dpm-solver': 20, 'sa-solver': 25}
-    sample_steps = args.step if args.step != -1 else sample_steps_dict[args.sampling_algo]
-    weight_dtype = torch.float16
-    print(f"Inference with {weight_dtype}")
+    lewei_scale = {512: 1, 1024: 2, 256:1}     # trick for positional embedding interpolation
+    sample_steps = args.sample_steps
+
+    # Initalize Scheduler:
+    scheduler = LCMScheduler(beta_start=0.0001, beta_end=0.02, beta_schedule="linear", prediction_type="epsilon")
 
     # model setting
-    if args.image_size == 512:
-        model = PixArt_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
+    if args.image_size == 256:
+        # model = PixArt_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
+        model = PixArt_XL_2_T2V(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
     else:
         model = PixArtMS_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
 
@@ -159,7 +137,6 @@ if __name__ == '__main__':
     print('Missing keys: ', missing)
     print('Unexpected keys', unexpected)
     model.eval()
-    model.to(weight_dtype)
     base_ratios = eval(f'ASPECT_RATIO_{args.image_size}_TEST')
 
     vae = AutoencoderKL.from_pretrained(args.tokenizer_path).to(device)
@@ -182,6 +159,7 @@ if __name__ == '__main__':
     os.umask(0o000)  # file permission: 666; dir permission: 777
     os.makedirs(img_save_dir, exist_ok=True)
 
-    save_root = os.path.join(img_save_dir, f"{datetime.now().date()}_{args.dataset}_epoch{epoch_name}_step{step_name}_scale{args.cfg_scale}_step{sample_steps}_size{args.image_size}_bs{args.bs}_samp{args.sampling_algo}_seed{seed}")
+    save_root = os.path.join(img_save_dir, f"{datetime.now().date()}_{args.dataset}_epoch{epoch_name}_step{step_name}_scale{args.cfg_scale}_step{sample_steps}_size{args.image_size}_bs{args.bs}_sampLCM_seed{seed}")
     os.makedirs(save_root, exist_ok=True)
     visualize(items, args.bs, sample_steps, args.cfg_scale)
+

@@ -38,20 +38,27 @@ def build_dataset(cfg, resolution=224, **kwargs):
 
 
 def build_dataloader(dataset, batch_size=256, num_workers=4, shuffle=True, **kwargs):
-    return (
-        DataLoader(
+    # 提取 collate_fn 并确保它不通过 kwargs 传递到 DataLoader
+    collate_fn = kwargs.pop('collate_fn', None)
+
+    # 根据是否指定 batch_sampler 来调用 DataLoader
+    if 'batch_sampler' in kwargs:
+        batch_sampler = kwargs.pop('batch_sampler')
+        return DataLoader(
             dataset,
-            batch_sampler=kwargs['batch_sampler'],
+            batch_sampler=batch_sampler,
             num_workers=num_workers,
             pin_memory=True,
+            collate_fn=collate_fn  # 明确地传递 collate_fn
         )
-        if 'batch_sampler' in kwargs
-        else DataLoader(
+    else:
+        return DataLoader(
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
             pin_memory=True,
-            **kwargs
+            collate_fn=collate_fn,  # 明确地传递 collate_fn
+            **kwargs  # 传递其他可能的参数
         )
-    )
+

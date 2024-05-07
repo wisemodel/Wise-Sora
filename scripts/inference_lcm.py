@@ -29,7 +29,7 @@ def get_args():
     parser.add_argument('--t5_path', default='output/pretrained_models/t5_ckpts', type=str)
     parser.add_argument('--tokenizer_path', default='output/pretrained_models/sd-vae-ft-ema', type=str)
     parser.add_argument('--txt_file', default='asset/samples.txt', type=str)
-    parser.add_argument('--model_path', default='output/pretrained_models/PixArt-XL-2-1024x1024.pth', type=str)
+    parser.add_argument('--model_path', default='output/pretrained_models/PixArt-XL-2-1024-MS.pth', type=str)
     parser.add_argument('--bs', default=1, type=int)
     parser.add_argument('--cfg_scale', default=4.5, type=float)
     parser.add_argument('--sample_steps', default=4, type=int)
@@ -56,6 +56,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
     for chunk in tqdm(list(get_chunks(items, bs)), unit='batch'):
 
         prompts = []
+        breakpoint()
         if bs == 1:
             prompt_clean, _, hw, ar, custom_hw = prepare_prompt_ar(chunk[0], base_ratios, device=device, show=False)  # ar for aspect ratio
             if args.image_size == 1024:
@@ -129,6 +130,7 @@ if __name__ == '__main__':
     print('Missing keys: ', missing)
     print('Unexpected keys', unexpected)
     model.eval()
+    breakpoint()
     base_ratios = eval(f'ASPECT_RATIO_{args.image_size}_TEST')
 
     vae = AutoencoderKL.from_pretrained(args.tokenizer_path).to(device)
@@ -154,4 +156,3 @@ if __name__ == '__main__':
     save_root = os.path.join(img_save_dir, f"{datetime.now().date()}_{args.dataset}_epoch{epoch_name}_step{step_name}_scale{args.cfg_scale}_step{sample_steps}_size{args.image_size}_bs{args.bs}_sampLCM_seed{seed}")
     os.makedirs(save_root, exist_ok=True)
     visualize(items, args.bs, sample_steps, args.cfg_scale)
-

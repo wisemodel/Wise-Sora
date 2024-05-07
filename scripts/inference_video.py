@@ -11,23 +11,25 @@ from datetime import datetime
 from tqdm import tqdm
 import torch
 from torchvision.utils import save_image
+import torchvision
 from diffusers.models import AutoencoderKL
 
 from diffusion.model.utils import prepare_prompt_ar
 from diffusion import IDDPM, DPMS, SASolverSampler
 from tools.download import find_model
 from diffusion.model.nets import PixArtMS_XL_2, PixArt_XL_2
+from diffusion.model.nets.PixArt_t2v import PixArt_XL_2_T2V
 from diffusion.model.t5 import T5Embedder
-from diffusion.data.datasets import get_chunks, ASPECT_RATIO_512_TEST, ASPECT_RATIO_1024_TEST
+from diffusion.data.datasets import get_chunks, ASPECT_RATIO_512_TEST, ASPECT_RATIO_1024_TEST, ASPECT_RATIO_256_TEST
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_size', default=512, type=int)
+    parser.add_argument('--image_size', default=256, type=int)
     parser.add_argument('--t5_path', default='output/pretrained_models/t5_ckpts', type=str)
     parser.add_argument('--tokenizer_path', default='output/pretrained_models/sd-vae-ft-ema', type=str)
-    parser.add_argument('--txt_file', default='asset/samples.txt', type=str)
-    parser.add_argument('--model_path', default='output/pretrained_models/PixArt-XL-2-512x512.pth', type=str)
+    parser.add_argument('--txt_file', default='asset/samples3.txt', type=str)
+    parser.add_argument('--model_path', default='output/train_InternVId_1_256/checkpoints/epoch_25000_step_25000.pth', type=str)
     parser.add_argument('--bs', default=1, type=int)
     parser.add_argument('--cfg_scale', default=4.5, type=float)
     parser.add_argument('--sampling_algo', default='dpm-solver', type=str, choices=['iddpm', 'dpm-solver', 'sa-solver'])
@@ -78,7 +80,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
             if args.sampling_algo == 'iddpm':
                 # Create sampling noise:
                 n = len(prompts)
-                z = torch.randn(n, 4, latent_size_h, latent_size_w, device=device).repeat(2, 1, 1, 1)
+                z = torch.randn(n, 20, 4, latent_size_h, latent_size_w, device=device).repeat(2, 1, 1, 1)
                 model_kwargs = dict(y=torch.cat([caption_embs, null_y]),
                                     cfg_scale=cfg_scale, data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
                 diffusion = IDDPM(str(sample_steps))
@@ -91,7 +93,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
             elif args.sampling_algo == 'dpm-solver':
                 # Create sampling noise:
                 n = len(prompts)
-                z = torch.randn(n, 4, latent_size_h, latent_size_w, device=device)
+                z = torch.randn(n, 20, 4, latent_size_h, latent_size_w, device=device)
                 model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
                 dpm_solver = DPMS(model.forward_with_dpmsolver,
                                   condition=caption_embs,
@@ -120,14 +122,22 @@ def visualize(items, bs, sample_steps, cfg_scale):
                     unconditional_guidance_scale=cfg_scale,
                     model_kwargs=model_kwargs,
                 )[0]
+        prompts = prompts*20
         samples = vae.decode(samples / 0.18215).sample
         torch.cuda.empty_cache()
         # Save images:
         os.umask(0o000)  # file permission: 666; dir permission: 777
+        video = []
         for i, sample in enumerate(samples):
-            save_path = os.path.join(save_root, f"{prompts[i][:100]}.jpg")
+            save_path = os.path.join(save_root, f"{prompts[i][:100]}_{i}.jpg")
             print("Saving path: ", save_path)
-            save_image(sample, save_path, nrow=1, normalize=True, value_range=(-1, 1))
+            img = save_image(sample, save_path, nrow=1, normalize=True, value_range=(-1, 1))
+            video.append(img)
+        video = torch.tensor(video)
+        device_cpu = "cpu"
+        video = video.to(device_cpu)
+        video_save_path = os.path.join(save_root, f"{prompts[0][:100]}.mp4")
+        torchvision.io.write_video(video_save_path, video, fps=20)
 
 
 if __name__ == '__main__':
@@ -140,15 +150,15 @@ if __name__ == '__main__':
 
     # only support fixed latent size currently
     latent_size = args.image_size // 8
-    lewei_scale = {512: 1, 1024: 2}     # trick for positional embedding interpolation
+    lewei_scale = {512: 1, 1024: 2, 256:1}     # trick for positional embedding interpolation
     sample_steps_dict = {'iddpm': 100, 'dpm-solver': 20, 'sa-solver': 25}
     sample_steps = args.step if args.step != -1 else sample_steps_dict[args.sampling_algo]
     weight_dtype = torch.float16
     print(f"Inference with {weight_dtype}")
 
     # model setting
-    if args.image_size == 512:
-        model = PixArt_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
+    if args.image_size == 256:
+        model = PixArt_XL_2_T2V(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
     else:
         model = PixArtMS_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
 
@@ -163,7 +173,12 @@ if __name__ == '__main__':
     base_ratios = eval(f'ASPECT_RATIO_{args.image_size}_TEST')
 
     vae = AutoencoderKL.from_pretrained(args.tokenizer_path).to(device)
+    print("args.t5_path",args.t5_path)
+    import time
+    s = time.time()
     t5 = T5Embedder(device="cuda", local_cache=True, cache_dir=args.t5_path, torch_dtype=torch.float)
+    e = time.time()
+    print(f"spend time: {e-s}")
     work_dir = os.path.join(*args.model_path.split('/')[:-2])
     work_dir = f'/{work_dir}' if args.model_path[0] == '/' else work_dir
 

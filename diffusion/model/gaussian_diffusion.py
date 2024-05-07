@@ -6,7 +6,7 @@
 
 import enum
 import math
-
+from einops import rearrange,repeat
 import numpy as np
 import torch as th
 import torch.nn.functional as F
@@ -760,12 +760,17 @@ class GaussianDiffusion:
                 ModelVarType.LEARNED,
                 ModelVarType.LEARNED_RANGE,
             ]:
+                Batch, Frames = x_t.shape[0:2]
+                x_t = rearrange(x_t, 'b f c h w -> (b f) c h w', b = Batch)
+                output = rearrange(output, 'b f c h w -> (b f) c h w', b = Batch)
                 B, C = x_t.shape[:2]
                 assert output.shape == (B, C * 2, *x_t.shape[2:])
                 output, model_var_values = th.split(output, C, dim=1)
                 # Learn the variance using the variational bound, but don't let it affect our mean prediction.
                 frozen_out = th.cat([output.detach(), model_var_values], dim=1)
                 # vb variational bound
+                x_start = rearrange(x_start, 'b f c h w -> (b f) c h w', b = Batch)
+                t = repeat(t, 'b -> (b f)', f = Frames)
                 terms["vb"] = self._vb_terms_bpd(
                     model=lambda *args, r=frozen_out, **kwargs: r,
                     x_start=x_start,
@@ -777,7 +782,6 @@ class GaussianDiffusion:
                     # Divide by 1000 for equivalence with initial implementation.
                     # Without a factor of 1/1000, the VB term hurts the MSE term.
                     terms["vb"] *= self.num_timesteps / 1000.0
-
             target = {
                 ModelMeanType.PREVIOUS_X: self.q_posterior_mean_variance(
                     x_start=x_start, x_t=x_t, t=t
@@ -785,6 +789,7 @@ class GaussianDiffusion:
                 ModelMeanType.START_X: x_start,
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
+            target = rearrange(target, 'b f c h w -> (b f) c h w', b = Batch)
             assert output.shape == target.shape == x_start.shape
             if self.snr:
                 if self.model_mean_type == ModelMeanType.START_X:
