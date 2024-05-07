@@ -30,5 +30,5 @@ log_interval = 20
 save_model_epochs=5000
 save_model_steps=1000
 work_dir = 'output/train_InternVId_FLT1_256'
-resume_from = dict(checkpoint="output/train_InternVId_1_256/checkpoints/epoch_10000_step_10000.pth", load_ema=False, resume_optimizer=True, resume_lr_scheduler=False)
+# resume_from = dict(checkpoint="output/train_InternVId_1_256/checkpoints/epoch_10000_step_10000.pth", load_ema=False, resume_optimizer=True, resume_lr_scheduler=False)
 # resume_from = dict(checkpoint="output/train_InternVId_1_256/checkpoints/epoch_10000_step_10000.pth", load_ema=False, resume_optimizer=True, resume_lr_scheduler=True)
