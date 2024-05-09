@@ -329,7 +329,7 @@ def model_wrapper(
             #---------------针对视频做的处理----------------------#
             '''如果是图像需要注释'''
             if x.ndim == 4:
-                x = rearrange(x,'(b f) c h w -> b f c h w',b = x.shape[0]//16)
+                x = rearrange(x,'(b f) c h w -> b f c h w',b = x.shape[0]//14)
                 t_continuous = t_continuous[:x.shape[0]]
             #---------------针对视频做的处理----------------------#
             x_in = torch.cat([x] * 2)

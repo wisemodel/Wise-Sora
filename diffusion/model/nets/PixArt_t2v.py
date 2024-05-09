@@ -17,6 +17,9 @@ from einops import rearrange, repeat
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import PatchEmbed, Mlp
 
+import sys
+sys.path.append('/home/lijunjie/work/PixArt-alpha/diffusion')
+
 from diffusion.model.builder import MODELS
 from diffusion.model.utils import auto_grad_checkpoint, to_2tuple
 from diffusion.model.nets.PixArt_blocks import t2i_modulate, CaptionEmbedder, WindowAttention, MultiHeadCrossAttention, T2IFinalLayer, TimestepEmbedder, LabelEmbedder, FinalLayer

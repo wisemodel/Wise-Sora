@@ -49,7 +49,6 @@ def load_checkpoint(checkpoint,
     assert isinstance(checkpoint, str)
     ckpt_file = checkpoint
     checkpoint = torch.load(ckpt_file, map_location="cpu")
-
     state_dict_keys = ['pos_embed', 'base_model.pos_embed', 'model.pos_embed']
     for key in state_dict_keys:
         if key in checkpoint['state_dict']:
@@ -57,6 +56,12 @@ def load_checkpoint(checkpoint,
             if 'state_dict_ema' in checkpoint and key in checkpoint['state_dict_ema']:
                 del checkpoint['state_dict_ema'][key]
             break
+
+    # 调整权重
+    if 'x_embedder.proj.weight' in checkpoint['state_dict']:
+        weight = checkpoint['state_dict']['x_embedder.proj.weight']
+        new_weight = weight.unsqueeze(2)  # 在正确的位置增加所需的维度
+        checkpoint['state_dict']['x_embedder.proj.weight'] = new_weight
 
     if load_ema:
         state_dict = checkpoint['state_dict_ema']

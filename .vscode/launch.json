@@ -10,12 +10,12 @@
             "args": [
                 "--nproc_per_node=1",
                 "--master_port=12345",
-                "train_scripts/train_internvid.py",
+                "train_scripts/train_internvid_open.py",
                 "configs/pixart_config/PixArt_xl2_img256_internvid.py",
-                "--work_dir", "output/train_InternVId_256",
+                "--work_dir", "output/train_open_InternVId_256",
                 "--load_from", "output/pretrained_models/PixArt-XL-2-SAM-256x256.pth"
             ],
-            "env": {"CUDA_VISIBLE_DEVICES":"0"},
+            "env": {"CUDA_VISIBLE_DEVICES":"7"},
         }
     ]
 }

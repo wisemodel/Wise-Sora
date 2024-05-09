@@ -19,6 +19,7 @@ from diffusion import IDDPM, DPMS, SASolverSampler
 from tools.download import find_model
 from diffusion.model.nets import PixArtMS_XL_2, PixArt_XL_2
 from diffusion.model.nets.PixArt_t2v import PixArt_XL_2_T2V
+from diffusion.model.nets.pixart_t2v import PixArtT2V_XL_2
 from diffusion.model.t5 import T5Embedder
 from diffusion.data.datasets import get_chunks, ASPECT_RATIO_512_TEST, ASPECT_RATIO_1024_TEST, ASPECT_RATIO_256_TEST
 
@@ -29,7 +30,7 @@ def get_args():
     parser.add_argument('--t5_path', default='output/pretrained_models/t5_ckpts', type=str)
     parser.add_argument('--tokenizer_path', default='output/pretrained_models/sd-vae-ft-ema', type=str)
     parser.add_argument('--txt_file', default='asset/samples1.txt', type=str)
-    parser.add_argument('--model_path', default='output/train_InternVId_FLT1_256/checkpoints/epoch_399_step_285285.pth', type=str)
+    parser.add_argument('--model_path', default='output/train_open_InternVId_256/checkpoints/epoch_175_step_125000.pth', type=str)
     parser.add_argument('--bs', default=1, type=int)
     parser.add_argument('--cfg_scale', default=4.5, type=float)
     parser.add_argument('--sampling_algo', default='dpm-solver', type=str, choices=['iddpm', 'dpm-solver', 'sa-solver'])
@@ -80,7 +81,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
             if args.sampling_algo == 'iddpm':
                 # Create sampling noise:
                 n = len(prompts)
-                z = torch.randn(n, 20, 4, latent_size_h, latent_size_w, device=device).repeat(2, 1, 1, 1)
+                z = torch.randn(n, 14, 4, latent_size_h, latent_size_w, device=device).repeat(2, 1, 1, 1)
                 model_kwargs = dict(y=torch.cat([caption_embs, null_y]),
                                     cfg_scale=cfg_scale, data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
                 diffusion = IDDPM(str(sample_steps))
@@ -93,7 +94,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
             elif args.sampling_algo == 'dpm-solver':
                 # Create sampling noise:
                 n = len(prompts)
-                z = torch.randn(n, 20, 4, latent_size_h, latent_size_w, device=device)
+                z = torch.randn(n, 14, 4, latent_size_h, latent_size_w, device=device)
                 model_kwargs = dict(data_info={'img_hw': hw, 'aspect_ratio': ar}, mask=emb_masks)
                 dpm_solver = DPMS(model.forward_with_dpmsolver,
                                   condition=caption_embs,
@@ -158,7 +159,8 @@ if __name__ == '__main__':
 
     # model setting
     if args.image_size == 256:
-        model = PixArt_XL_2_T2V(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
+        # model = PixArt_XL_2_T2V(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
+        model = PixArtT2V_XL_2(input_size=((14, 32, 32))).cuda()
     else:
         model = PixArtMS_XL_2(input_size=latent_size, lewei_scale=lewei_scale[args.image_size]).to(device)
 
@@ -169,7 +171,7 @@ if __name__ == '__main__':
     print('Missing keys: ', missing)
     print('Unexpected keys', unexpected)
     model.eval()
-    model.to(weight_dtype)
+    # model.to(weight_dtype)
     base_ratios = eval(f'ASPECT_RATIO_{args.image_size}_TEST')
 
     vae = AutoencoderKL.from_pretrained(args.tokenizer_path).to(device)
