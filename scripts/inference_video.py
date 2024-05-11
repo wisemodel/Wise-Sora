@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument('--t5_path', default='output/pretrained_models/t5_ckpts', type=str)
     parser.add_argument('--tokenizer_path', default='output/pretrained_models/sd-vae-ft-ema', type=str)
     parser.add_argument('--txt_file', default='asset/samples1.txt', type=str)
-    parser.add_argument('--model_path', default='output/train_open_InternVId_256/checkpoints/epoch_359_step_256000.pth', type=str)
+    parser.add_argument('--model_path', default='output/train_open_InternVId_256_resume/checkpoints/epoch_581_step_363000.pth', type=str)
     parser.add_argument('--bs', default=1, type=int)
     parser.add_argument('--cfg_scale', default=4.5, type=float)
     parser.add_argument('--sampling_algo', default='dpm-solver', type=str, choices=['iddpm', 'dpm-solver', 'sa-solver'])
@@ -138,7 +138,7 @@ def visualize(items, bs, sample_steps, cfg_scale):
         device_cpu = "cpu"
         video = video.to(device_cpu)
         video_save_path = os.path.join(save_root, f"{prompts[0][:100]}.mp4")
-        torchvision.io.write_video(video_save_path, video, fps=14)
+        torchvision.io.write_video(video_save_path, video, fps=7)
 
 
 if __name__ == '__main__':

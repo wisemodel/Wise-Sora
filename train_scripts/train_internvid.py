@@ -98,6 +98,7 @@ def train():
     t5 = T5Embedder(device="cuda", local_cache=True, cache_dir=t5_path, torch_dtype=torch.float)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Now you train the model
+    print(f"{model.__class__.__name__} Model Trainable Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
     for epoch in range(start_epoch + 1, config.num_epochs + 1):
         data_time_start= time.time()
         data_time_all = 0
@@ -333,6 +334,7 @@ if __name__ == '__main__':
                         learn_sigma=learn_sigma,
                         pred_sigma=pred_sigma,
                         **model_kwargs).train()
+    
     logger.info(f"{model.__class__.__name__} Model Parameters: {sum(p.numel() for p in model.parameters()):,}")
     model_ema = deepcopy(model).eval()
 

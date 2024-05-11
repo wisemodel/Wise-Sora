@@ -57,11 +57,11 @@ def load_checkpoint(checkpoint,
                 del checkpoint['state_dict_ema'][key]
             break
 
-    # 调整权重
-    if 'x_embedder.proj.weight' in checkpoint['state_dict']:
-        weight = checkpoint['state_dict']['x_embedder.proj.weight']
-        new_weight = weight.unsqueeze(2)  # 在正确的位置增加所需的维度
-        checkpoint['state_dict']['x_embedder.proj.weight'] = new_weight
+    # # 加载原权重才需要调整权重 否则注释掉
+    # if 'x_embedder.proj.weight' in checkpoint['state_dict']:
+    #     weight = checkpoint['state_dict']['x_embedder.proj.weight']
+    #     new_weight = weight.unsqueeze(2)  # 在正确的位置增加所需的维度
+    #     checkpoint['state_dict']['x_embedder.proj.weight'] = new_weight
 
     if load_ema:
         state_dict = checkpoint['state_dict_ema']
