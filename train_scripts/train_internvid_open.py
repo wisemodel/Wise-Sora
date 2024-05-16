@@ -332,7 +332,7 @@ if __name__ == '__main__':
     #                     learn_sigma=learn_sigma,
     #                     pred_sigma=pred_sigma,
     #                     **model_kwargs).train()
-    model = PixArtT2V_XL_2(input_size=((14, 32, 32))).cuda()
+    model = PixArtT2V_XL_2(input_size=((16, 32, 32))).cuda()
     model = model.train()
     logger.info(f"{model.__class__.__name__} Model Parameters: {sum(p.numel() for p in model.parameters()):,}")
     model_ema = deepcopy(model).eval()

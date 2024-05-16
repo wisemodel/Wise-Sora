@@ -63,6 +63,9 @@ def load_checkpoint(checkpoint,
     #     new_weight = weight.unsqueeze(2)  # 在正确的位置增加所需的维度
     #     checkpoint['state_dict']['x_embedder.proj.weight'] = new_weight
 
+    # 从14帧到16帧输入变化 pos_embed_temporal维度对齐失败 但是pos_embed_temporal梯度未打开 可删除这个key
+    del checkpoint['state_dict']["pos_embed_temporal"]
+
     if load_ema:
         state_dict = checkpoint['state_dict_ema']
     else:
