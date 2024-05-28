@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ## Demo
 ### CausalVideoVAE
 1. download weights
-Download the weights from [HF](), and then assign the weighs directory to the `--model_path` parameter of the `rec_video.sh` script in the directory `wisesora/autoencoder/causalvae`. 
+Download the weights from [HF](https://huggingface.co/supermodelteam/autoencoder/tree/main/v1), and then assign the weighs directory to the `--model_path` parameter of the `rec_video.sh` script in the directory `wisesora/autoencoder/causalvae`. 
 2. setup environment (optional)
 ```
 export PYTHONPATH=$PYTHONPATH:/path/to/Wise-Sora/wisesora/autoencoder/causalvae
