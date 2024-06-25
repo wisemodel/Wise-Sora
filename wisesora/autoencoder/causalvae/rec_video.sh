@@ -9,7 +9,7 @@ python -m torch.distributed.run \
     rec_video.py \
     --model_path /path/to/directory/of/weights \
     --video_path ../../assets/origin_video_0.mp4 \
-    --rec_path results/rec_video_0_release_v0.1.0_2k.mp4 \
+    --rec_path results/rec_video_0_release_v1_keep_aspect_x2.mp4 \
     --ae CausalVAEModel_4x8x8 \
     --device cuda \
     --fps 30 \

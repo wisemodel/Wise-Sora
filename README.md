@@ -25,6 +25,10 @@ Now you can run the video reconstruction demo as follows.
 cd wisesora/autoencoder/causalvae
 bash rec_video.sh
 ```
+You will get the following reconstructed video.
+[![CausalVAE Demo](https://res.cloudinary.com/marcomontalbano/image/upload/v1719288459/video_to_markdown/images/youtube--FqCrvu6ZHzg-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=FqCrvu6ZHzg "CausalVAE Demo")  
+
+More examples can be viewed from the [supermodelteam](https://www.youtube.com/@supermodelteam) channel on YouTube.
 ## Train
 ### CausalVideoVAE
 on the way
