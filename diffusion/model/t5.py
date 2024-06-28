@@ -9,8 +9,9 @@ import torch
 from bs4 import BeautifulSoup
 from transformers import T5EncoderModel, AutoTokenizer
 from huggingface_hub import hf_hub_download
+import torch.nn as nn
 
-class T5Embedder:
+class T5Embedder():
 
     available_models = ['t5-v1_1-xxl']
     bad_punct_regex = re.compile(r'['+'#®•©™&@·º½¾¿¡§~'+'\)'+'\('+'\]'+'\['+'\}'+'\{'+'\|'+'\\'+'\/'+'\*' + r']{1,}')  # noqa
@@ -19,39 +20,49 @@ class T5Embedder:
                  t5_model_kwargs=None, torch_dtype=None, use_offload_folder=None, model_max_length=120):
         self.device = torch.device(device)
         self.torch_dtype = torch_dtype or torch.bfloat16
+        # self.torch_dtype = torch.bfloat16
+        # use_offload_folder = "output/pretrained_models/t5_ckpts/use_offload_folder"
         if t5_model_kwargs is None:
             t5_model_kwargs = {'low_cpu_mem_usage': True, 'torch_dtype': self.torch_dtype}
             if use_offload_folder is not None:
                 t5_model_kwargs['offload_folder'] = use_offload_folder
                 t5_model_kwargs['device_map'] = {
+                    # 'shared': self.device,
+                    # 'encoder.embed_tokens': self.device,
+                    # 'encoder.block.0': self.device,
+                    # 'encoder.block.1': self.device,
+                    # 'encoder.block.2': self.device,
+                    # 'encoder.block.3': self.device,
+                    # 'encoder.block.4': self.device,
+                    # 'encoder.block.5': self.device,
+                    # 'encoder.block.6': self.device,
+                    # 'encoder.block.7': self.device,
+                    # 'encoder.block.8': self.device,
+                    # 'encoder.block.9': self.device,
+                    # 'encoder.block.10': self.device,
+                    # 'encoder.block.11': self.device,
+                    # 'encoder.block.12': 'disk',
+                    # 'encoder.block.13': 'disk',
+                    # 'encoder.block.14': 'disk',
+                    # 'encoder.block.15': 'disk',
+                    # 'encoder.block.16': 'disk',
+                    # 'encoder.block.17': 'disk',
+                    # 'encoder.block.18': 'disk',
+                    # 'encoder.block.19': 'disk',
+                    # 'encoder.block.20': 'disk',
+                    # 'encoder.block.21': 'disk',
+                    # 'encoder.block.22': 'disk',
+                    # 'encoder.block.23': 'disk',
+                    # 'encoder.final_layer_norm': 'disk',
+                    # 'encoder.dropout': 'disk',
+                    #-------------v2--------------#
+                    #-------------encoder offload disk +10frame----------#
                     'shared': self.device,
-                    'encoder.embed_tokens': self.device,
-                    'encoder.block.0': self.device,
-                    'encoder.block.1': self.device,
-                    'encoder.block.2': self.device,
-                    'encoder.block.3': self.device,
-                    'encoder.block.4': self.device,
-                    'encoder.block.5': self.device,
-                    'encoder.block.6': self.device,
-                    'encoder.block.7': self.device,
-                    'encoder.block.8': self.device,
-                    'encoder.block.9': self.device,
-                    'encoder.block.10': self.device,
-                    'encoder.block.11': self.device,
-                    'encoder.block.12': 'disk',
-                    'encoder.block.13': 'disk',
-                    'encoder.block.14': 'disk',
-                    'encoder.block.15': 'disk',
-                    'encoder.block.16': 'disk',
-                    'encoder.block.17': 'disk',
-                    'encoder.block.18': 'disk',
-                    'encoder.block.19': 'disk',
-                    'encoder.block.20': 'disk',
-                    'encoder.block.21': 'disk',
-                    'encoder.block.22': 'disk',
-                    'encoder.block.23': 'disk',
-                    'encoder.final_layer_norm': 'disk',
-                    'encoder.dropout': 'disk',
+                    'encoder': 'cpu',
+                    #-------------v3--------------#
+                    #-------------encoder offload disk +10frame----------#
+                    # 'shared': 'disk',
+                    # 'encoder': 'disk',
                 }
             else:
                 t5_model_kwargs['device_map'] = {'shared': self.device, 'encoder': self.device}
@@ -83,9 +94,29 @@ class T5Embedder:
             tokenizer_path = cache_dir
 
         print(tokenizer_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path,legacy=False)  # 占用19G
+        # breakpoint()
+        # del t5_model_kwargs['device_map']
         self.model = T5EncoderModel.from_pretrained(path, **t5_model_kwargs).eval()
+        # import copy
+        # self.model1 = copy.deepcopy(self.model)
+        # self.model, _, _, _ = deepspeed.initialize(model=self.model, model_parameters=None, optimizer=None, config="deepspeed_config_stage3_t5.json")
         self.model_max_length = model_max_length
+
+    def compare_model_parameters(self,model1, model2):
+        for p1, p2 in zip(model1.parameters(), model2.parameters()):
+            if not torch.allclose(p1, p2, atol=1e-7):
+                print("Parameters differ")
+                return False
+        print("All parameters are the same")
+        return True
+
+    def compare_model_outputs(self, output1, output2):
+        
+        if torch.allclose(output1, output2, atol=1e-5):
+            print("Outputs are the same")
+        else:
+            print("Outputs differ")
 
     def get_text_embeddings(self, texts):
         texts = [self.text_preprocessing(text) for text in texts]
@@ -102,7 +133,6 @@ class T5Embedder:
 
         text_tokens_and_mask['input_ids'] = text_tokens_and_mask['input_ids']
         text_tokens_and_mask['attention_mask'] = text_tokens_and_mask['attention_mask']
-
         with torch.no_grad():
             text_encoder_embs = self.model(
                 input_ids=text_tokens_and_mask['input_ids'].to(self.device),

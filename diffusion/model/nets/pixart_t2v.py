@@ -49,6 +49,16 @@ from diffusion.model.nets.blocks import (
 )
 from diffusion.model.builder import MODELS
 
+from torch.utils.checkpoint import checkpoint, checkpoint_sequential
+from collections.abc import Iterable
+
+def auto_grad_checkpoint(module, *args, **kwargs):
+    if getattr(module, "grad_checkpointing", False):
+        if not isinstance(module, Iterable):
+            return checkpoint(module, *args, **kwargs)
+        gc_step = module[0].grad_checkpointing_step
+        return checkpoint_sequential(module, gc_step, *args, **kwargs)
+    return module(*args, **kwargs)
 
 class PixArtBlock(nn.Module):
     """
@@ -230,8 +240,9 @@ class PixArtT2V3(nn.Module):
             y = y.squeeze(1).view(1, -1, x.shape[-1])
 
         # blocks
-        for block in self.blocks:
+        for i,block in enumerate(self.blocks):
             # x = auto_grad_checkpoint(block, x, y, t0, y_lens)
+            print(x.shape)
             x = block(x,y,t0,y_lens)
 
         # final process

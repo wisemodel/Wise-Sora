@@ -5,17 +5,34 @@
             "name": "Python Debugger: Current File",
             "type": "python",
             "request": "launch",
-            "program": "/home/lijunjie/.conda/envs/pixart/lib/python3.9/site-packages/torch/distributed/launch.py",
+            "program": "/home/lijunjie/miniconda3/envs/pixartpp_clone/lib/python3.9/site-packages/torch/distributed/launch.py",
             "console": "integratedTerminal",
             "args": [
                 "--nproc_per_node=1",
                 "--master_port=12345",
-                "train_scripts/train_internvid_open.py",
-                "configs/pixart_config/PixArt_xl2_img256_internvid.py",
-                "--work_dir", "output/train_open_InternVId_256",
-                "--load_from", "output/pretrained_models/PixArt-XL-2-SAM-256x256.pth"
+                "train_scripts/train_internvid_nets2_ds.py",
+                "configs/pixart_config/PixArt_xl2_img256_internvid_debug.py",
+                "--work_dir", "output/debug3"
             ],
             "env": {"CUDA_VISIBLE_DEVICES":"7"},
+            "justMyCode": false,
         }
     ]
 }
+
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Python Debugger: Current File",
+//             "type": "python",
+//             "request": "launch",
+//             "program": "/home/lijunjie/miniconda3/envs/pixartpp/lib/python3.9/site-packages/torch/distributed/launch.py",
+//             "console": "integratedTerminal",
+//             "args": [
+//                 "scripts/inference_video_net2_1.py",
+//             ],
+//             "env": {"CUDA_VISIBLE_DEVICES":"0"},
+//         }
+//     ]
+// }

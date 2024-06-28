@@ -1,0 +1,157 @@
+# path:
+ckpt: "output/debug_r256_f32_56f_100_grad/checkpoints/epoch_30_step_3000.pth"
+save_img_path: "output/debug_r256_f32_56f_100_grad/epoch_30_step_3000/vis_test0/"
+pretrained_model_path: "Latte/t2v_required_models"
+
+# model config: 
+model: LatteT2V
+video_length: 56
+image_size: [256, 256]
+# # beta schedule
+beta_start: 0.0001
+beta_end: 0.02
+beta_schedule: "linear"
+variance_type: "learned_range"
+
+# model speedup
+use_compile: False
+use_fp16: True
+
+# sample config:
+seed: 4000
+run_time: 0
+guidance_scale: 7.5
+sample_method: 'PNDM'
+num_sampling_steps: 50
+enable_temporal_attentions: True
+enable_vae_temporal_decoder: False # use temporal vae decoder from SVD, maybe reduce the video flicker (It's not widely tested)
+
+# text_prompt: ["the scene from a movie where it shows the volcano",]
+
+# # 通用类
+text_prompt: [
+              # "a man in black is skiing.",
+              # 'Yellow and black tropical fish dart through the sea.',
+              # 'An epic tornado attacking above aglowing city at night.',
+              # 'Slow pan upward of blazing oak fire in an indoor fireplace.',
+              # 'a cat wearing sunglasses and working as a lifeguard at pool.',
+              # 'Sunset over the sea.',
+              # 'A dog in astronaut suit and sunglasses floating in space.',
+              "the bridge of a river being viewed from a cable",
+              "a lady is standing in a crowd with a red paper plate",
+              "a man in glasses on the rooftop of a building",
+              "the woman is in front of a blue screen with words",
+              "a person using a wooden spoon to mix chocolate on a wood floor",
+              "the ada's chest item",
+              "an asian woman in the dark with her hand covering her face",
+              "chinese city officials' speech about taiwan's city expansion plan",
+              "a news report of two people arrested for making meth",
+              "an old pot containing plants that are small in size",
+              "an aerial view of trees in a snowy forest",
+              # "maroon fleece blanket with stars and hearts on it",
+              # "time lapse of stars and clouds in the night sky over mountains. time lapse of stars and clouds in the night sky over mountains.",
+              # "a black background with a black moon and a star",
+              # "a blue and white logo with the words tj on it",
+              # "A serene lake surrounded by mountains at sunset.",
+              # "A dense forest with a carpet of fallen leaves in autumn.",
+              # "A tropical beach with crystal clear water and palm trees.",
+              # "A vast desert with rolling sand dunes under a clear blue sky.",
+              # "A snowy mountain peak with a clear view of the surrounding range.",
+              # "A lush green valley with a river winding through it.",
+              # "A field of wildflowers in full bloom under a bright sun.",
+              # "A peaceful countryside with rolling hills and a small farmhouse.",
+              # "A bustling cityscape seen from a high vantage point at night.",
+              # "A calm ocean with gentle waves lapping at the shore.",
+              # "A crescent moon moves to the left",
+              # "A peaceful village surrounded by green hills and flowing rivers.",
+              # "Sunset over the desert with golden sands and a caravan in the distance.",
+              # "Springtime cherry blossoms falling gently by a small stream.",
+              # "A clear mountain lake reflecting snowy peaks and blue skies.",
+              # "Waves crashing against the cliffs by the sea, seagulls flying above.",
+              # "A serene forest with tall trees and a gentle waterfall.",
+              # "A tranquil beach with palm trees and turquoise waters.",
+              # "Autumn leaves falling in a quiet park with a pond.",
+              # "A misty morning in the mountains with a winding path.",
+              # "A meadow filled with colorful wildflowers under a bright sky."
+              ]
+
+# 运动类
+# text_prompt: [
+#               "A basketball player making a slam dunk during a game.",
+#               "A soccer player scoring a goal with a powerful kick.",
+#               "Two basketball teams competing in a high-energy match.",
+#               "A soccer goalkeeper diving to save a penalty shot.",
+#               "A basketball player dribbling past defenders towards the hoop.",
+#               "A soccer player performing a skillful dribble past opponents.",
+#               "Fans cheering wildly in a packed basketball arena.",
+#               "A soccer match under the bright stadium lights at night.",
+#               "A basketball coach giving instructions to the team during a timeout.",
+#               "A soccer player celebrating a goal with teammates on the field."
+#               ]
+
+# # 日落类
+# text_prompt: [
+#               "The sun slowly setting over the ocean with waves gently crashing.",
+#               "A fiery sunset behind a mountain range with clouds moving across the sky.",
+#               "The sun setting over a calm lake, reflecting its vibrant colors on the water.",
+#               "A sunset over a field of waving golden wheat, with the sky transitioning from orange to pink.",
+#               "The sun dipping below the horizon of a desert landscape, casting long shadows on the sand dunes.",
+#               "A city skyline silhouetted against a dramatic sunset, with lights beginning to twinkle.",
+#               "The sun setting behind a forest, with birds flying across the colorful sky.",
+#               "A sunset over a beach, with palm trees swaying in the breeze and people walking along the shore.",
+#               "The sun setting behind rolling hills, with the sky filled with shades of purple and red.",
+#               "A sunset over a river, with the water flowing gently and the sky ablaze with color."
+#               ]
+
+# text_prompt: [
+#  "Pan over a snowy forest at sunrise, with light streaming through the trees and illuminating the snow.",
+#     "Start from the peak of a snow-covered mountain, then zoom out to reveal skiers descending the slopes.",
+#     "Show a time-lapse of the Milky Way moving across a clear night sky above a tranquil mountain lake.",
+#     "Capture the gentle waves of a quiet beach at dawn, with soft colors reflecting on the water surface.",
+#     "Film a close-up of waves lapping on a sandy beach, slowly panning up to a bustling beach party at sunset.",
+#     "Start at the base of a cliff and slowly move upwards to reveal a daring climber nearing the top.",
+#     "Show a powerful waterfall from above, then follow the water as it cascades down into a misty pool below.",
+#     "Pan through a dense forest in autumn, with leaves changing color and falling gently to the ground.",
+#     "Capture a serene snow-covered mountain at dusk, with the last rays of sun casting pink hues across the snow.",
+#     "Film a night sky full of stars with a silhouette of a lone tree in the foreground, slowly zooming into the tree.",
+#     "Show the ocean waves during a storm, transitioning to calm weather with a rainbow appearing over the sea.",
+#     "Start with a close-up of a footpath in a lush forest, then follow a hiker as they walk through the scenery.",
+#     "Capture the moment when the morning fog lifts to reveal a hidden beach cove surrounded by cliffs.",
+#     "Zoom into the reflective surface of a tranquil beach at night, showing stars reflecting in the water.",
+#     "Film a sequence of playful dolphins jumping alongside a cliff at sunset, with vibrant colors in the sky.",
+#     "Show a time-lapse of a waterfall freezing over, transitioning from flowing water to sparkling ice.",
+#     "Start at the top of a waterfall, slowly moving down to follow the water as it plunges into the river below.",
+#     "Capture a panoramic view of a mountain range under the stars, slowly panning across to show a meteor shower.",
+#     "Film the bustling life on a tropical beach during the day, then transition to a peaceful starlit night.",
+#     "Show a close-up of icicles melting on a mountain cliff face, with dripping water sparkling in the sunlight.",
+#     "Start inside a forest looking up through the trees as snow begins to fall, slowly covering the camera's lens.",
+#     "Capture a lone surfer walking along a misty beach at dawn, with waves gently breaking in the background.",
+#     "Film a cliff face as climbers ascend, zooming out to reveal the vast landscape surrounding them.",
+#     "Show the transition from day to night at a mountain campsite, with the Milky Way gradually appearing overhead.",
+#     "Start with a close-up of rain hitting a forest floor, then pan up to show the dense canopy and stormy sky.",
+#     "Capture the dynamic interaction of waves against a rocky beach during high tide, with spray misting the air.",
+#     "Film a slow motion shot of a leaf floating down a forest stream, surrounded by autumn colors.",
+#     "Show a panoramic view of a sandy beach as a beach volleyball game takes place during sunset.",
+#     "Start with a close-up of frost on a pine tree in a snowy forest, then zoom out to show snow falling gently.",
+#     "Capture a group of hikers reaching the summit of a snow-covered mountain, revealing a panoramic view.",
+#     "Film the slow rise of the full moon over a sea cliff, illuminating the waves crashing below.",
+#     "Show a time-lapse of clouds moving swiftly over a mountain range, casting dynamic shadows on the snowy peaks.",
+#     "Start with a close-up of water droplets on a spider web in a forest, then zoom out to reveal the early morning sun.",
+#     "Capture a bird's-eye view of a long wooden pier on a beach, with people enjoying the summer weather.",
+#     "Film a close-up of a bonfire on a beach at night, slowly panning up to show friends gathered and singing.",
+#     "Show the first snowfall of the season in a dense forest, with flakes accumulating on branches and leaves.",
+#     "Capture a high-speed boat ride along a cliff-lined coastline, showing the cliffs from a dynamic sea-level view.",
+#     "Film a sequence of a family building a sandcastle on a beach, with waves threatening to wash it away.",
+#     "Show a close-up of rain falling on a rocky cliff, then zoom out to reveal a rainbow forming across the valley.",
+#     "Start with a close-up of a frozen lake in a snow-covered forest, then zoom out to show ice skaters.",
+#     "Capture a panoramic view of a lush forest in spring, with flowers blooming and birds flying across.",
+#     "Film the changing tides at a beach from day to evening, showing the water's slow retreat and the night lights.",
+#     "Show a close-up of a natural pool at the base of a waterfall, then pan up to show the water source.",
+#     "Start with a close-up of dew on grass at a beach at sunrise, then zoom out to reveal surfers heading into the waves.",
+#     "Capture a panoramic view of a cliff at sunset, with paragliders soaring past into the colorful sky.",
+#     "Film a close-up of small waves hitting a sandy beach, transitioning to children playing and building sandcastles.",
+#     "Show the serene early morning on a snow-covered mountain, with skiers preparing for the first run of the day.",
+#     "Capture the vibrant nightlife on a beach with a festival of lights, music, and dance around a bonfire.",
+#     "Film a close-up of a waterfall's base, capturing the play of light and rainbow in the mist.",
+#     "Start with a close-up of footprints in the sand at a secluded beach, then follow them to a couple watching the sunset."
+# ]

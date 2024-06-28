@@ -35,10 +35,11 @@ class InternVId(Dataset):
         df = pd.read_json(json_path, lines=True)
 
         # 取前2000个
-        df = df.head(500000)
+        df = df.head(10000)
+        # df = df.head(100)
         # df = df.iloc[48037:48038]
 
-        print(df)
+        # print(df)
 
         # 构造视频文件名和路径
         df['video_name'] = df['YoutubeID'].astype(str) + "_" + df['Start_timestamp'].astype(str) + "_" + df['End_timestamp'].astype(str) + ".mp4"
@@ -57,7 +58,7 @@ class InternVId(Dataset):
         self.caption_samples = df['Caption'].tolist()
         self.ori_imgs_nums = len(df)
 
-    def getdata(self, idx, frame_interval=4, needed_frames=16):
+    def getdata(self, idx, frame_interval=4, needed_frames=14):
         video_path = self.video_samples[idx]
         data_info = {'img_hw': torch.tensor([self.resolution, self.resolution], dtype=torch.float32),
                      'aspect_ratio': torch.tensor(1.)}

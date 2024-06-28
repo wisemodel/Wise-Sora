@@ -117,7 +117,6 @@ class PatchEmbed3D(nn.Module):
             x = F.pad(x, (0, 0, 0, self.patch_size[1] - H % self.patch_size[1]))
         if D % self.patch_size[0] != 0:
             x = F.pad(x, (0, 0, 0, 0, 0, self.patch_size[0] - D % self.patch_size[0]))
-
         x = self.proj(x)  # (B C T H W)
         if self.norm is not None:
             D, Wh, Ww = x.size(2), x.size(3), x.size(4)

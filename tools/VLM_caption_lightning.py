@@ -52,7 +52,6 @@ def pad2square(image):
 def load_model(model_path):
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = LlavaMPTForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, low_cpu_mem_usage=True)
-
     mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
     tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
     if mm_use_im_start_end:
