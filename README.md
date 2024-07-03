@@ -25,22 +25,25 @@
 conda create -n wisesora python=3.9
 conda activate wisesora
 # download the repo
-git clone 
+git clone https://github.com/wisemodel/Wise-Sora.git
 cd wisesora
 pip install -r requirements.txt
 ```
 
 
 ### 模型权重
-t5权重
+t5权重下载链接
+[t5下载](https://huggingface.co/PixArt-alpha/PixArt-alpha/tree/main/t5-v1_1-xxl)
 
 vae权重
+[vae下载](https://huggingface.co/PixArt-alpha/PixArt-alpha/tree/main/sd-vae-ft-ema)
 
-7s 512权重
-"output/debug_r512_f32_56f_10000_grad/checkpoints/epoch_32_step_10000.pth"
+7s 512权重 
+[epoch_32_step_10000.pth](https://www.wisemodel.cn/models/TheBestCloud/wisesora_dit/file)
 
-7s 256权重
-"output/net2_1000000/checkpoints/epoch_9_step_201200.pth"
+
+16s 512权重
+[epoch_373_step_37300.pth](https://www.wisemodel.cn/models/TheBestCloud/wisesora_dit/file)
 
 ### 推理
 在t2v_sample1.yaml指定text_prompt, ckpt, pretrained_model_path, 然后执行执行以下命令
