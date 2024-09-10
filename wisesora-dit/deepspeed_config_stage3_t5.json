@@ -1,0 +1,23 @@
+{
+    "zero_optimization": {
+        "stage": 3,
+        "reduce_scatter": true,
+        "reduce_bucket_size": 4e6,
+        "overlap_comm": true,
+        "stage3_gather_16bit_weights_on_model_save": false,
+        "offload_param": {
+            "device": "cpu",
+            "pin_memory": true
+        },
+        "offload_optimizer": {
+            "device": "cpu",
+            "pin_memory": true
+        }
+    },
+    "gradient_accumulation_steps": 1,
+    "gradient_clipping": 0.5,
+    "steps_per_print": 1000,
+    "train_micro_batch_size_per_gpu": 1,
+    "wall_clock_breakdown": false,
+    "cuda_device": [7]
+}

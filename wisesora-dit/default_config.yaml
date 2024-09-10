@@ -1,0 +1,12 @@
+compute_environment: LOCAL_MACHINE
+debug: true
+deepspeed_config:
+  deepspeed_config_file: deepspeed_config_stage3.json
+distributed_type: DEEPSPEED
+enable_cpu_affinity: false
+machine_rank: 0
+main_training_function: main
+num_machines: 1
+num_processes: 2
+gpu_ids: "6,7"
+use_cpu: false
